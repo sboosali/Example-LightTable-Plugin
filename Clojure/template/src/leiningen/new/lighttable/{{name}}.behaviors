@@ -1,0 +1,7 @@
+; {:TAG [(:BEHAVIOR ARGS) ...]}
+{:+ {:app [(:lt.objs.plugins/load-js "{{name}}_compiled.js")
+           (:lt.objs.plugins/load-keymap "{{name}}.keymap")
+           (:lt.objs.plugins/load-css "{{name}}.css")
+           ]
+     :hello [:lt.plugins.{{name}}/destroy-on-close
+             :lt.plugins.{{name}}/print-on-submit]}}

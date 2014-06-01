@@ -1,0 +1,2 @@
+; {:TAG {"KEYS" [:COMMAND ...]}}
+{:+ {:app {"pmeta-h" [:lt.plugins.{{name}}/hi]}}}
