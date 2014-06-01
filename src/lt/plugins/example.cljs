@@ -6,7 +6,8 @@
             [lt.objs.files :as files]
             [lt.objs.proc :as proc]
             [lt.objs.popup :as popup]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [lt.util.load :as load])
   ; see https://github.com/LightTable/LightTable/tree/master/src/lt/objs
   ; for more LightTable builtins
   (:require-macros [lt.macros :refer [defui behavior]]))
@@ -34,7 +35,7 @@
 
 ; click anywhere in this expression to eval it.
 ; change "world!" and eval -> the open tab changes too.
-; re-evaling object/object* re-defines the object named ::hello, which is re-inited.
+; re-evaling object/object* re-defines the object named ::hello, which is re-inited (?)
 (object/object* ::hello
                 :tags [:hello]
                 :name "hello"
@@ -50,11 +51,16 @@
           :reaction (fn [this]
                       (object/raise this :destroy)))
 
+(defn input [] ; get the val of the last input elem
+  (dom/val (dom/$ "input")))
+
 (behavior ::print-on-submit
           :triggers #{:click}
           :reaction (fn [this]
-                      (let [name (dom/val (dom/$ "input"))] ; get the val of last input
-                       (print name))))
+                      (let [name (input)]
+                       (when-not (string/blank? name)
+                         (print name)))))
+
 
 ; :: is a "namespace-qualified symbol"
 ; i.e. (= ::hello :lt.plugins.example/hello)
@@ -62,12 +68,19 @@
 
 ; change :desc and eval -> the Command Bar description changes too.
 (cmd/command {:command ::say-hello
-              :desc "Example: Say Hey" ; what you search for in the Command Bar
+              :desc "Plugins: new plugin" ; what you search for in the Command Bar
               :exec (fn []
                       (tabs/add-or-focus! hello))})
 
-
 ; once you connect this file to the Lighttable UI, you can eval this expression.
-; with the tab open, you get the attr; with the tab closed, you get null.
+; with the tab open, you can get it; with the tab closed, you get null.
 (dom/val (dom/$ "input"))
 
+;when ready, connect your plugin to LightTable's repo by:
+; changing "source" in "plugin.json"
+; running the "Plugins: Submit a plugin" command
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; I/O
+
+(def shell (load/node-module "shelljs"))
