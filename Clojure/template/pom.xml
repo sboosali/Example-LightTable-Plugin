@@ -60,6 +60,11 @@
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
+      <artifactId>data.json</artifactId>
+      <version>0.2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
       <artifactId>tools.nrepl</artifactId>
       <version>0.2.3</version>
       <exclusions>

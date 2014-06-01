@@ -1,13 +1,17 @@
 (ns lt.plugins.example ; our namespace
   (:require [lt.object :as object]
-            [lt.objs.tabs :as tabs]
             [lt.objs.command :as cmd]
-            [lt.util.dom :as dom]
+
             [lt.objs.files :as files]
             [lt.objs.proc :as proc]
+            [lt.objs.platform :as platform]
+
+            [lt.util.dom :as dom]
+            [lt.objs.tabs :as tabs]
             [lt.objs.popup :as popup]
-            [clojure.string :as string]
-            [lt.util.load :as load])
+            [lt.objs.notifos :as notifos]
+
+            [clojure.string :as string])
   ; see https://github.com/LightTable/LightTable/tree/master/src/lt/objs
   ; for more LightTable builtins
   (:require-macros [lt.macros :refer [defui behavior]]))
@@ -59,7 +63,7 @@
           :reaction (fn [this]
                       (let [name (input)]
                        (when-not (string/blank? name)
-                         (print name)))))
+                         (run name)))))
 
 
 ; :: is a "namespace-qualified symbol"
@@ -83,4 +87,59 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; I/O
 
-(def shell (load/node-module "shelljs"))
+
+
+(def runner (files/join plugins-dir
+                        "Example"
+                        (if (platform/win?)
+                             "run/example.bat"
+                             "run/example.sh")))
+
+(def plugins-dir (files/join files/data-path "plugins"))
+
+
+(defn run [name]
+ (proc/exec {:command runner
+             :args [name]
+             :cwd plugins-dir
+             :env {"LIGHTTABLE_PLUGINS" plugins-dir}
+             :obj (object/create ::connecting-notifier)
+             }))
+
+
+(defn ->dir [phrase] (string/join "" (map string/capitalize (string/split phrase #"\s+"))))
+(defn ->file [phrase] (string/join "-" (filter #(not (string/blank? %1)) (map string/lower-case (string/split phrase #"\s+")))))
+(->dir " new  Plugin ")
+(->file " new  Plugin ")
+
+
+(object/object* ::connecting-notifier
+                :triggers []
+                :behaviors [::on-out ::on-error ::on-exit]
+                :init (fn [this] nil))
+
+(behavior ::on-out
+          :triggers #{:proc.out}
+          :reaction (fn [this data]
+                      (let [out (.toString data)]
+                        (print (str "[out]\n" out))
+                        (object/update! this [:buffer] str out)
+                        (when (> (.indexOf out "Connected") -1)
+                          (do
+                            (notifos/done-working)
+                            (object/merge! this {:connected true}))))))
+
+(behavior ::on-error
+          :triggers #{:proc.error}
+          :reaction (fn [this data]
+                      (let [out (.toString data)]
+                        (print (str "[error]\n" out)))))
+
+(behavior ::on-exit
+          :triggers #{:proc.exit}
+          :reaction (fn [this data]
+                      (print (str "[exit]\n" data))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

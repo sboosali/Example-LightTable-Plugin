@@ -5,9 +5,10 @@
   {:pre [(= plugin (name-to-path plugin))]}
 
   (let [render (fn [name]
-                (let [text ((renderer "lighttable") name {:name plugin})]
+                (let [text ((renderer "lighttable") name {:name plugin})
+                      output (format "{\"file\": \"%s/%s\"}" plugin name)]
                  (do
-                  (println (str plugin "/" name))
+                  (println output)
                   [name text])))]
 
    (->files {:name plugin}
