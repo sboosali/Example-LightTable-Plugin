@@ -16,6 +16,7 @@
   ; for more LightTable builtins
   (:require-macros [lt.macros :refer [defui behavior]]))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; UI Element, Object, Tag, Trigger, Behavior
 
@@ -78,15 +79,16 @@
 
 ; once you connect this file to the Lighttable UI, you can eval this expression.
 ; with the tab open, you can get it; with the tab closed, you get null.
+; close the hello tab and open a search bar -> now it's new text -> LightTable is one big DOM window
 (dom/val (dom/$ "input"))
 
 ;when ready, connect your plugin to LightTable's repo by:
 ; changing "source" in "plugin.json"
 ; running the "Plugins: Submit a plugin" command
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; I/O
-
 
 
 (def runner (files/join plugins-dir
@@ -98,20 +100,30 @@
 (def plugins-dir (files/join files/data-path "plugins"))
 
 
+(defn str->dir [phrase]
+  (string/join "_"
+               (filter #(not (string/blank? %))
+                       (map string/capitalize
+                            (string/split phrase #"\s+")))))
+(defn str->file [phrase]
+  (string/join "-"
+               (filter #(not (string/blank? %))
+                       (map string/lower-case
+                            (string/split phrase #"\s+")))))
+(str->dir " new  Plugin ")
+(str->file " new  Plugin ")
+
 (defn run [name]
  (proc/exec {:command runner
-             :args [name]
+             :args [(str->file name)]
              :cwd plugins-dir
-             :env {"LIGHTTABLE_PLUGINS" plugins-dir}
-             :obj (object/create ::connecting-notifier)
-             }))
+             :env {"LIGHTTABLE_PLUGINS" plugins-dir
+                   "LEIN_BREAK_CONVENTION" true}
+             :obj (object/create ::connecting-notifier)}))
 
 
-(defn ->dir [phrase] (string/join "" (map string/capitalize (string/split phrase #"\s+"))))
-(defn ->file [phrase] (string/join "-" (filter #(not (string/blank? %1)) (map string/lower-case (string/split phrase #"\s+")))))
-(->dir " new  Plugin ")
-(->file " new  Plugin ")
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Command
 
 (object/object* ::connecting-notifier
                 :triggers []
@@ -125,9 +137,7 @@
                         (print (str "[out]\n" out))
                         (object/update! this [:buffer] str out)
                         (when (> (.indexOf out "Connected") -1)
-                          (do
-                            (notifos/done-working)
-                            (object/merge! this {:connected true}))))))
+                          (object/merge! this {:connected true})))))
 
 (behavior ::on-error
           :triggers #{:proc.error}
@@ -138,8 +148,9 @@
 (behavior ::on-exit
           :triggers #{:proc.exit}
           :reaction (fn [this data]
-                      (print (str "[exit]\n" data))))
-
+                      (do
+                        (notifos/done-working)
+                        (print (str "[exit]\n" data)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

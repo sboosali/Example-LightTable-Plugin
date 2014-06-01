@@ -1,4 +1,4 @@
-@echo off
+echo Connected
 
 cd %LIGHTTABLE_PLUGINS%\Example\Clojure\template
 lein install
