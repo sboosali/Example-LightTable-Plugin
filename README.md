@@ -1,13 +1,13 @@
-run the "Example: make new plugin" command and name your plugin.
+# API
 
-read the `.cljs` file that opens, that's the meat of the plugin. it shows how LightTable works.
+## Help
 
-connect your local repo to a remote repo with:
+run the "Help: with Example Plugin" command to see this README.
 
-    git init
-    git add README.md
-    git commit -m "first commit"
-    git remote add origin git@github.com:USER/PLUGIN.git
-    git push -u origin master
+## New Plugin
 
-and start editing!
+run the "Plugins: new plugin" command and name your plugin.
+
+read the `.cljs` file that opens, that's the heart of the plugin.
+
+and start plugging in!

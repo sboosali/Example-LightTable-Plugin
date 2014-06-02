@@ -1,2 +1,4 @@
 ; {:TAG {"KEYS" [:COMMAND ...]}}
 {:+ {:app {"pmeta-h" [:lt.plugins.{{name}}/hi]}}}
+; "pmeta" means "platform-independent meta" (?)
+; i.e. "alt" on Windows/Linux and "cmd" on Mac

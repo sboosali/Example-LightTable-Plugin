@@ -46,6 +46,10 @@
 (str->dir  " new \\ Plugin / ")
 
 
+; the directory where LightTable keeps its plugins
+(def PLUGINS (files/join files/data-path "plugins"))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; UI (Sidebar Input)
 
@@ -75,12 +79,16 @@
                       (when (not (empty? name))
                         (new-plugin! name)))})
 
+(def REAMDE (files/join PLUGINS "Example" "README.md"))
+
+(cmd/command {:command ::help
+              :desc "Help: with Example Plugin (shows README)"
+              :exec (fn []
+                      (cmd/exec! :open-path README))})
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; I/O
-
-; the directory where LightTable keeps plugins
-(def PLUGINS (files/join files/data-path "plugins"))
 
 ; the script
 (def runner (files/join PLUGINS

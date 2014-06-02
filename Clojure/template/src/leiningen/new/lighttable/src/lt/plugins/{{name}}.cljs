@@ -1,20 +1,19 @@
 ; Welcome To LightTable!
 ; read the comments and learn how to make your own plugin.
-; they talk about ClojureScript, the BOT, LightTable's UI,
-; and how to write a plugin.
+; they talk about ClojureScript, the BOT, and LightTable's UI.
 
-; in this file,
-; save to build the plugin
+; first, you must:
+; save this file to build the plugin
 ; type pmeta-a + pmeta-enter to eval everything
-; when prompted, connect to the "LightTable UI"
-
-; in the sidebar,
+; when prompted, connect to the LightTable UI
+; then in the sidebar:
 ; run "refresh plugin list" (and see your plugin in "show plugin manager")
-; run "reload keymaps" and "reload beaviors"
-; run "toggle console"
-; run "hello" in the sidebar, or type the "cmd-h"
+; run "reload keymaps"
+; run "reload beaviors"
+; run "toggle console" to bring it up
+; run "hello" in the sidebar, or type "cmd-h"
 
-; if a tab came up, now you're all set up.
+; if a tab came up, you're all set up.
 ; edit/eval away!
 
 (ns lt.plugins.{{name}} ; our namespace
@@ -41,16 +40,18 @@
    (dom/prevent event)
    (object/raise this trigger)))
 
-(defui ok-button [this]
-  [:input {:type "submit" :value "Say It"}] ; first, the element
-  :click (re-raise this :click)) ; then, the events and handlers
-
-; <div class="Class" id="Id">_</h1>
+; <div class="Class" id="Id">...</div>
 ; styled by {{name}}.css
 (defui hello-panel [this x]
   [:div#Id.Class {:height 200 :width 200}
-   [:input {:type "text" :placeholder "Hello LightTable!"}]
-   (ok-button this)]) ; call one defui macro from another
+   [:input#hello {:type "text" :placeholder "Hello LightTable!"}]
+   (ok-button this)]) ; one defui macro can call another defui macro
+
+; <input>...</input>
+; $(this).bind(re-raise)
+(defui ok-button [this]
+  [:input {:type "submit" :value "Log To Console"}] ; first, the element
+  :click (re-raise this :click)) ; then, the events and handlers
 
 ; click anywhere in this expression to eval it.
 ; change "world!" and eval -> the open tab changes too.
@@ -61,9 +62,9 @@
                 :init (fn [this]
                         (hello-panel this "world!")))
 
-; closing a tab only raises the :close trigger
-; we tag the ::hello object with the :hello tag in (object/object* ...)
-; we trigger the ::destroy-on-close behvaior with the :close trigger in (behavior ...)
+; closing a tab only raises the :close trigger, thus:
+; we tag the ::hello object with the :hello tag in (object/object* ... :tags ...)
+; we bind the ::destroy-on-close behvaior to the :close trigger in (behavior ... :triggers ...)
 ; we tag the ::destroy-on-close behavior with the :hello tag in {{name}}.behaviors
 (behavior ::destroy-on-close
           :triggers #{:close} ; a Set
@@ -73,12 +74,12 @@
 (behavior ::print-on-submit
           :triggers #{:click}
           :reaction (fn [this]
-                      (let [name (dom/val (dom/$ "input"))] ; get the val of last input
+                      (let [name (dom/val (dom/$ "#hello"))] ; jquery-style
                        (when-not (string/blank? name)
-                         (println "{{name}}" name)))))
+                         (println "{{name}} says" name)))))
 
 ; "::" makes a "namespace-qualified symbol"
-; i.e. (= ::hello :lt.plugins.{{name}}/hello)
+; "::hello" in this namespace is ":lt.plugins.{{name}}/hello" in other namespaces
 (def hello (object/create ::hello))
 
 ; change :desc and eval -> the Command Bar description changes too.
@@ -89,13 +90,20 @@
 
 
 ; once you connect this file to the Lighttable UI, you can eval this expression.
-; with the tab open, you can get it; with the tab closed, you get null.
 (dom/val (dom/$ "input"))
-
-;when ready, connect your plugin to LightTable's repo by:
-; changing "source" in "plugin.json"
-; running the "Plugins: Submit a plugin" command
-
+; with the tab open, you can get the text; with the tab closed, you get nil.
+; an open search bar will come before our open tab, and you'll get that text.
+; the LightTable UI is one big DOM Window, be careful.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+
+; connect your local repo to a remote repo with:
+;    git init
+;    git add README.md
+;    git commit -m "first commit"
+;    git remote add origin git@github.com:$USER/{name}.git
+;    git push -u origin master
+
+; when ready, you can push your plugin to LightTable's repo (and to everyone's LightTable) by:
+;    changing "source" in "plugin.json"
+;    running the "Plugins: Submit a plugin" command
