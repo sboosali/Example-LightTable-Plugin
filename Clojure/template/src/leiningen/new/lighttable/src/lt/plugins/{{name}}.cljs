@@ -1,3 +1,7 @@
+; Welcome To LightTable!
+; read the comments and learn how to make your own plugin.
+; they talk about ClojureScript, the BOT, and LightTable's UI
+
 (ns lt.plugins.{{name}} ; our namespace
   (:require [lt.object :as object]
             [lt.objs.tabs :as tabs]
@@ -79,4 +83,4 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
+;;

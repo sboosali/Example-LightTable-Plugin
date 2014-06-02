@@ -1,16 +1,12 @@
 (ns leiningen.new.lighttable
-  (:require [leiningen.new.templates :refer [renderer name-to-path ->files]])
-  (:require [clojure.string :as string]))
+  (:require [leiningen.new.templates :refer [renderer name-to-path ->files]]))
 
 (defn lighttable [plugin]
   (let [render (fn [name]
-                 (let [text ((renderer "lighttable") name {:name plugin})
-                       output (format "{\"file\": \"%s/%s\"}" plugin (string/replace name #"\{\{\w+\}\}" plugin))]
-                   (do
-                     (println output)
-                     [name text])))]
+                 (let [text ((renderer "lighttable") name {:name plugin})] ; this dict replaces {{name}} in contents
+                   [name text]))]
 
-    (->files {:name plugin}
+    (->files {:name plugin} ; this dict replaces {{name}} in paths
              (render "plugin.json")
              (render "project.clj")
              (render "{{name}}.behaviors")

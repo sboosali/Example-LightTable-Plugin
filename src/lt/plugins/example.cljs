@@ -1,4 +1,4 @@
-(ns lt.plugins.example ; our namespace
+(ns lt.plugins.example
   (:require [lt.object :as object]
             [lt.objs.command :as cmd]
 
@@ -10,147 +10,151 @@
             [lt.objs.tabs :as tabs]
             [lt.objs.popup :as popup]
             [lt.objs.notifos :as notifos]
+            [lt.objs.sidebar.command :as sidebar]
+            [lt.objs.console :as console]
 
             [clojure.string :as string])
-  ; see https://github.com/LightTable/LightTable/tree/master/src/lt/objs
-  ; for more LightTable builtins
   (:require-macros [lt.macros :refer [defui behavior]]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; UI Element, Object, Tag, Trigger, Behavior
+; Util
 
-; an event handler factory
-; (i think) we must re-raise the DOM event as a LT trigger
-(defn re-raise [this trigger]
-  (fn [event]
-   (dom/prevent event)
-   (object/raise this trigger)))
+(defn in? [x xs]
+  (> (.indexOf xs x) -1))
 
-(defui ok-button [this]
-  [:input {:type "submit" :value "OK"}] ; first, the element
-  :click (re-raise this :click)) ; then, the events and handlers
+(def bad #"[^A-Za-z0-9._-]+")
 
-; <div class="Class" id="Id">x</h1>
-; styled by example.css
-(defui hello-panel [this x]
-  [:div#Id.Class {:height 200 :width 200}
-   [:input {:type "text" :placeholder "New Plugin"}]
-   (ok-button this)]) ; call one defui macro from another
+(defn good? [char]
+  (in? char "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"))
 
-; click anywhere in this expression to eval it.
-; change "world!" and eval -> the open tab changes too.
-; re-evaling object/object* re-defines the object named ::hello, which is re-inited (?)
-(object/object* ::hello
-                :tags [:hello]
-                :name "hello"
-                :init (fn [this]
-                        (hello-panel this "world!")))
+(defn ->file [name]
+  (string/join "" (filter good? name)))
 
-; closing a tab only raises the :close trigger
-; we tag the ::hello object with the :hello tag in (object/object* ...)
-; we trigger the ::destroy-on-close behvaior with the :close trigger in (behavior ...)
-; we tag the ::destroy-on-close behavior with the :hello tag in example.behaviors
-(behavior ::destroy-on-close
-          :triggers #{:close} ; a Set
-          :reaction (fn [this]
-                      (object/raise this :destroy)))
+(defn str->file [phrase]
+  (string/join "-"
+               (filter #(not (string/blank? %))
+                       (map string/lower-case
+                            (string/split phrase bad)))))
+(defn str->dir [phrase]
+  (string/join "_"
+               (filter #(not (string/blank? %))
+                       (map string/capitalize
+                            (string/split phrase bad)))))
 
-(defn input [] ; get the val of the last input elem
-  (dom/val (dom/$ "input")))
-
-(behavior ::print-on-submit
-          :triggers #{:click}
-          :reaction (fn [this]
-                      (let [name (input)]
-                       (when-not (string/blank? name)
-                         (run name)))))
+(str->file " new \\ Plugin / ")
+(str->dir  " new \\ Plugin / ")
 
 
-; :: is a "namespace-qualified symbol"
-; i.e. (= ::hello :lt.plugins.example/hello)
-(def hello (object/create ::hello))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; UI (Sidebar Input)
 
-; change :desc and eval -> the Command Bar description changes too.
-(cmd/command {:command ::say-hello
-              :desc "Plugins: new plugin" ; what you search for in the Command Bar
-              :exec (fn []
-                      (tabs/add-or-focus! hello))})
+; user types "new plugin" into sidebar and picks ::make-plugin command
+; -> replace sidebar html with option html
+; -> user types text into option and hits "enter"
+; -> raise :select trigger
+; -> trigger ::exec-active! behavior
+; -> call (sidebar/exec-active! args...)
+; -> find active command
+; -> call (cmd/exec! ::make-plugin args...)
+; -> call (new-plugin! args...)
 
-; once you connect this file to the Lighttable UI, you can eval this expression.
-; with the tab open, you can get it; with the tab closed, you get null.
-; close the hello tab and open a search bar -> now it's new text -> LightTable is one big DOM window
-(dom/val (dom/$ "input"))
+(def name-input (sidebar/options-input {:placeholder "name your plugin"}))
 
-;when ready, connect your plugin to LightTable's repo by:
-; changing "source" in "plugin.json"
-; running the "Plugins: Submit a plugin" command
+(behavior ::exec-active!
+          :triggers #{:select}
+          :reaction (fn [this name]
+                      (sidebar/exec-active! name)))
+
+(object/add-behavior! name-input ::exec-active!)
+
+(cmd/command {:command ::make-plugin
+              :desc "Plugins: new plugin"
+              :options name-input
+              :exec (fn [name]
+                      (when (not (empty? name))
+                        (new-plugin! name)))})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; I/O
 
+; the directory where LightTable keeps plugins
+(def PLUGINS (files/join files/data-path "plugins"))
 
-(def runner (files/join plugins-dir
+; the script
+(def runner (files/join PLUGINS
                         "Example"
                         (if (platform/win?)
-                             "run/example.bat"
-                             "run/example.sh")))
+                          "run/example.bat"
+                          "run/example.sh")))
+; $ cd :cwd
+; $ export :env
+; $ :command :args
+(defn new-plugin! [name]
+  (let [plugin-name (str->file name)
+        Plugin_Dir  (str->dir name)
+        cljs (files/join PLUGINS Plugin_Dir "src" "lt" "plugins" (str plugin-name ".cljs"))]
+    ;^ e.g. .../New_Plugin/src/lt/plugins/new-plugin.cljs
 
-(def plugins-dir (files/join files/data-path "plugins"))
-
-
-(defn str->dir [phrase]
-  (string/join "_"
-               (filter #(not (string/blank? %))
-                       (map string/capitalize
-                            (string/split phrase #"\s+")))))
-(defn str->file [phrase]
-  (string/join "-"
-               (filter #(not (string/blank? %))
-                       (map string/lower-case
-                            (string/split phrase #"\s+")))))
-(str->dir " new  Plugin ")
-(str->file " new  Plugin ")
-
-(defn run [name]
- (proc/exec {:command runner
-             :args [(str->file name)]
-             :cwd plugins-dir
-             :env {"LIGHTTABLE_PLUGINS" plugins-dir
-                   "LEIN_BREAK_CONVENTION" true}
-             :obj (object/create ::connecting-notifier)}))
+    (proc/exec {:command runner
+                :args [plugin-name Plugin_Dir]
+                :cwd PLUGINS
+                :env {"LIGHTTABLE_PLUGINS" PLUGINS
+                      "LEIN_BREAK_CONVENTION" true}
+                :obj (object/create ::new-plugin {:cljs cljs})})))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Command
+; I/O
 
-(object/object* ::connecting-notifier
+(object/object* ::new-plugin
                 :triggers []
-                :behaviors [::on-out ::on-error ::on-exit]
-                :init (fn [this] nil))
+                :behaviors [::on-out ::on-error ::on-exit ::on-success ::on-failure]
+                :cljs "" ; the clojurescript file in the new plugin
+                :init (fn [this data] ; kwargs for state
+                        (object/merge! this data)))
 
 (behavior ::on-out
           :triggers #{:proc.out}
           :reaction (fn [this data]
                       (let [out (.toString data)]
                         (print (str "[out]\n" out))
+
                         (object/update! this [:buffer] str out)
-                        (when (> (.indexOf out "Connected") -1)
+                        (when (in? "Connected" out)
                           (object/merge! this {:connected true})))))
 
 (behavior ::on-error
           :triggers #{:proc.error}
           :reaction (fn [this data]
-                      (let [out (.toString data)]
-                        (print (str "[error]\n" out)))))
+                      (let [err (.toString data)]
+                        (print (str "[err]\n" err)))))
 
 (behavior ::on-exit
           :triggers #{:proc.exit}
           :reaction (fn [this data]
-                      (do
-                        (notifos/done-working)
-                        (print (str "[exit]\n" data)))))
+                      (let [exit-code (.toString data)]
+                        (print (str "[exit]\n" exit-code))
+
+                        (if (= "0" exit-code)
+                          (object/raise this :succeeded)
+                          (object/raise this :failed)))))
+
+(behavior ::on-success
+          :triggers #{:succeeded}
+          :reaction (fn [this] ; open the new files we made
+                      (let [cljs (get @this :cljs)]
+                        (print "open" cljs)
+                        (cmd/exec! :open-path cljs)
+                        (cmd/exec! :tabs.move-new-tabset))))
+
+(behavior ::on-failure
+          :triggers #{:failed}
+          :reaction (fn [this] ; focus on the console
+                      (cmd/exec! :console-tab)
+                      (cmd/exec! :toggle-console)
+                      (popup/popup! {:header "couldn't make the plugin, check console log."})))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -2,6 +2,4 @@
 {:+ {:app [(:lt.objs.plugins/load-js "example_compiled.js")
            (:lt.objs.plugins/load-keymap "example.keymap")
            (:lt.objs.plugins/load-css "example.css")
-           ]
-     :hello [:lt.plugins.example/destroy-on-close
-             :lt.plugins.example/print-on-submit]}}
+           ]}}

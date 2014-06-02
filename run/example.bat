@@ -5,4 +5,4 @@ lein install
 
 cd %LIGHTTABLE_PLUGINS%
 lein new lighttable "%1"
-
+rename "%1" "%2"
