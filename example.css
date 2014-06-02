@@ -1,17 +1,1 @@
-#Id {
-  color: white;
-}
 
-.Class {
-  background-color: black;
-}
-
-input:hover[type="submit"] {
-  color: black;
-  background-color: white;
-}
-
-input:focus[type="submit"] {
-  color: black;
-  background-color: white;
-}

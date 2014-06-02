@@ -1,6 +1,21 @@
 ; Welcome To LightTable!
 ; read the comments and learn how to make your own plugin.
-; they talk about ClojureScript, the BOT, and LightTable's UI
+; they talk about ClojureScript, the BOT, LightTable's UI,
+; and how to write a plugin.
+
+; in this file,
+; save to build the plugin
+; type pmeta-a + pmeta-enter to eval everything
+; when prompted, connect to the "LightTable UI"
+
+; in the sidebar,
+; run "refresh plugin list" (and see your plugin in "show plugin manager")
+; run "reload keymaps" and "reload beaviors"
+; run "toggle console"
+; run "hello" in the sidebar, or type the "cmd-h"
+
+; if a tab came up, now you're all set up.
+; edit/eval away!
 
 (ns lt.plugins.{{name}} ; our namespace
   (:require [lt.object :as object]
@@ -20,21 +35,21 @@
 ; UI Element, Object, Tag, Trigger, Behavior
 
 ; an event handler factory
-; (i think) we must re-raise the DOM event as a LT trigger
+; we must re-raise the DOM event as a LightTable trigger, for BOT (?)
 (defn re-raise [this trigger]
   (fn [event]
    (dom/prevent event)
    (object/raise this trigger)))
 
 (defui ok-button [this]
-  [:input {:type "submit" :value "OK"}] ; first, the element
+  [:input {:type "submit" :value "Say It"}] ; first, the element
   :click (re-raise this :click)) ; then, the events and handlers
 
 ; <div class="Class" id="Id">_</h1>
 ; styled by {{name}}.css
 (defui hello-panel [this x]
   [:div#Id.Class {:height 200 :width 200}
-   [:input {:type "text" :placeholder "New Plugin"}]
+   [:input {:type "text" :placeholder "Hello LightTable!"}]
    (ok-button this)]) ; call one defui macro from another
 
 ; click anywhere in this expression to eval it.
@@ -62,13 +77,13 @@
                        (when-not (string/blank? name)
                          (println "{{name}}" name)))))
 
-; :: is a "namespace-qualified symbol"
+; "::" makes a "namespace-qualified symbol"
 ; i.e. (= ::hello :lt.plugins.{{name}}/hello)
 (def hello (object/create ::hello))
 
 ; change :desc and eval -> the Command Bar description changes too.
 (cmd/command {:command ::hi
-              :desc "{{name}}: Say Hey" ; what you search for in the Command Bar
+              :desc "{{name}}: Hello" ; what you search for in the Command Bar
               :exec (fn []
                       (tabs/add-or-focus! hello))})
 

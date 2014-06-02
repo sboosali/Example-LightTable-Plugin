@@ -147,7 +147,10 @@
                       (let [cljs (get @this :cljs)]
                         (print "open" cljs)
                         (cmd/exec! :open-path cljs)
-                        (cmd/exec! :tabs.move-new-tabset))))
+                        (cmd/exec! :tabs.move-new-tabset)
+                        (cmd/exec! :plugin-manager.refresh)
+                        (cmd/exec! :behaviors.force-reload)
+                        (cmd/exec! :keymaps.reload))))
 
 (behavior ::on-failure
           :triggers #{:failed}
